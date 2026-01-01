@@ -1,0 +1,5 @@
+collections:
+  # Ansible Galaxy から community.postgresql コレクションをインストール
+  # PostgreSQL 関連のモジュールを利用可能にするため
+  # 例: community.postgresql.postgresql_user, community.postgresql.postgresql_db, community.postgresql.postgresql_query など
+  - name: community.postgresql

@@ -1,0 +1,67 @@
+# apt（パッケージ管理ツール）を使ってPostgreSQL本体をインストール
+- name: Install PostgreSQL packages
+  ansible.builtin.apt: # apt モジュールを使用
+    update_cache: true # パッケージリストを最新化
+    name: "{{ pg_packages }}" # インストールするパッケージリスト
+    state: present # インストール済みでなければインストール
+
+# PostgreSQL サービスを有効化・起動
+- name: Ensure PostgreSQL service is enabled and started
+  ansible.builtin.service: # service モジュールを使用
+    name: "{{ pg_service_name }}" # サービス名
+    state: started # 起動
+    enabled: true # 自動起動有効化
+
+# PostgreSQL の設定ファイルをテンプレートから配置
+- name: Decide listen_addresses
+  ansible.builtin.set_fact: # 一時的な変数を設定
+    _pg_listen_addresses: "{{ ' * ' if pg_allow_remote else pg_listen_addresses }}" # リモート接続許可に応じて設定
+  vars:
+    _dummy: "" # ダミー変数
+  changed_when: false # 変更なしとみなす
+
+# pg_hba.conf をテンプレートから配置
+- name: Deploy pg_hba.conf
+  ansible.builtin.template: # template モジュールを使用
+    src: pg_hba.conf.j2 # 元となるテンプレートファイル
+    dest: "/etc/postgresql/{{ pg_version }}/main/pg_hba.conf" # 配置先パス
+    owner: postgres # 所有者ユーザー
+    group: postgres # 所有者グループ
+    mode: "0640" # ファイルパーミッション
+  notify: Restart PostgreSQL # 変更があった場合にハンドラを呼び出し
+
+# postgresql.conf をテンプレートから配置
+- name: Ensure conf.d exists
+  ansible.builtin.file: # file モジュールを使用
+    path: "/etc/postgresql/{{ pg_version }}/main/conf.d" # ディレクトリパス
+    state: directory # ディレクトリとして作成
+    owner: postgres # 所有者ユーザー
+    group: postgres # 所有者グループ
+    mode: "0755" # ディレクトリパーミッション
+
+- name: Deploy ansible conf into conf.d
+  ansible.builtin.template:
+    src: 99-ansible.conf.j2
+    dest: "/etc/postgresql/{{ pg_version }}/main/conf.d/99-ansible.conf"
+    owner: postgres
+    group: postgres
+    mode: "0644"
+  notify: Restart PostgreSQL
+
+# 指定されたロール/ユーザーを作成
+- name: Create roles/users
+  community.postgresql.postgresql_user: # postgresql_user モジュールを使用
+    name: "{{ item.name }}" # ユーザー名
+    password: "{{ item.password }}" # パスワード
+    state: present # 状態（presentで作成/更新）
+  loop: "{{ pg_users }}" # ループで複数ユーザーを処理
+  become_user: postgres # postgres ユーザー権限で実行
+
+# 指定されたデータベースを作成
+- name: Create databases
+  community.postgresql.postgresql_db: # postgresql_db モジュールを使用
+    name: "{{ item.name }}" # データベース名
+    owner: "{{ item.owner }}" # 所有者ユーザー
+    state: present # 状態（presentで作成/更新）
+  loop: "{{ pg_databases }}" # ループで複数データベースを処理
+  become_user: postgres

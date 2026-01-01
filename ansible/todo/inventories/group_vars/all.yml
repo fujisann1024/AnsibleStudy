@@ -1,0 +1,2 @@
+pg_version: "16" # PostgreSQL バージョン
+pg_allow_remote: false # リモート接続許可フラグ

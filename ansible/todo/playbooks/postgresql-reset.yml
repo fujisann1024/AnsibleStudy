@@ -1,0 +1,44 @@
+- name: Reset PostgreSQL cluster (DESTRUCTIVE)
+  hosts: all
+  become: true
+  vars:
+    pg_version: "16"
+    pg_cluster: "main"
+
+  tasks:
+    - name: Stop PostgreSQL service (ignore if not running)
+      ansible.builtin.service:
+        name: postgresql
+        state: stopped
+      failed_when: false
+
+    # クラスタ削除が失敗しても、ディレクトリを消して作り直すため続行
+    - name: Try drop cluster (may fail if config is broken)
+      ansible.builtin.command: "pg_dropcluster --stop {{ pg_version }} {{ pg_cluster }}"
+      register: drop_result
+      failed_when: false
+      changed_when: drop_result.rc == 0
+
+    - name: Remove cluster config directory
+      ansible.builtin.file:
+        path: "/etc/postgresql/{{ pg_version }}/{{ pg_cluster }}"
+        state: absent
+
+    - name: Remove cluster data directory
+      ansible.builtin.file:
+        path: "/var/lib/postgresql/{{ pg_version }}/{{ pg_cluster }}"
+        state: absent
+
+    - name: Create cluster and start
+      ansible.builtin.command: "pg_createcluster {{ pg_version }} {{ pg_cluster }} --start"
+      register: create_result
+      changed_when: true
+
+    - name: Show clusters
+      ansible.builtin.command: pg_lsclusters
+      register: clusters
+      changed_when: false
+
+    - name: Debug clusters
+      ansible.builtin.debug:
+        var: clusters.stdout

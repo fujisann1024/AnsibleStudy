@@ -1,0 +1,8 @@
+# ansible-galaxy に公開する/共有する際の情報
+galaxy_info:
+  role_name: postgresql # ロール名
+  author: you # 作者名
+  description: Install and configure PostgreSQL on Ubuntu (WSL supported) # ロールの説明
+  license: MIT # ライセンス
+  min_ansible_version: "2.14" # 最低限必要な Ansible バージョン
+dependencies: [] # 依存ロール（今回はなし）

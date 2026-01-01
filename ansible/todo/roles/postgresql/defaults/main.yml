@@ -1,0 +1,28 @@
+# PostgreSQL のデフォルト設定値
+# 必要に応じて inventories/group_vars/db.yml などで上書きしてください
+
+# PostgreSQL バージョン
+pg_version: "16"
+
+# インストールする PostgreSQL 関連パッケージ
+pg_packages:
+  - "postgresql-{{ pg_version }}"
+  - "postgresql-client-{{ pg_version }}"
+  - python3-psycopg2
+
+# service: で起動・再起動するサービス名
+pg_service_name: postgresql
+
+# リモート接続を許可する場合のみ有効化
+pg_allow_remote: false
+# PostgreSQL がリッスンするアドレス
+pg_listen_addresses: "localhost"
+
+# pg_hba に追加する許可ルール（必要時のみ）
+pg_hba_extra_rules: []
+# 例:
+# pg_hba_extra_rules:
+#   - "host all all 172.16.0.0/12 scram-sha-256"
+
+pg_databases: []
+pg_users: []

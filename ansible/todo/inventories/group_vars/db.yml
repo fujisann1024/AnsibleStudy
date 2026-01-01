@@ -1,0 +1,9 @@
+# PostgreSQL内に作る データベース の定義リスト
+pg_databases:
+  - name: STUDY_DB
+    owner: postgres
+
+# PostgreSQL内に作る ロール（ユーザー） の定義リスト
+pg_users:
+  - name: appuser
+    password: "appuser_password"

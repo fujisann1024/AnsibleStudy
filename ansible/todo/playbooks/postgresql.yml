@@ -1,0 +1,8 @@
+- name: Provision PostgreSQL
+  # 対象ホストは全ホスト
+  hosts: all
+  # sudo 権限で実行
+  become: true
+  # roles_path配下のroles/postgresql/ を読み込む
+  roles:
+    - postgresql

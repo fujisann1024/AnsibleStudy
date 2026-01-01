@@ -1,0 +1,5 @@
+# テンプレートなどで設定変更後に PostgreSQL を再起動するハンドラ
+- name: Restart PostgreSQL
+  ansible.builtin.service:
+    name: "{{ pg_service_name }}"
+    state: restarted
