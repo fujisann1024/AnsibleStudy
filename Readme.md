@@ -83,14 +83,22 @@ ansible-galaxy collection list | grep community.postgresql
 プレイブック実行
 
 ```
-ansible-playbook playbooks/postgresql-reset.yml -K
-ansible-playbook playbooks/postgresql.yml -K
+ansible-playbook playbooks/reset.yml -K
+ansible-playbook playbooks/site.yml -K
 ```
 
 -- DB 確認
 
 ```
+
+systemctl status postgresql --no-pager
+systemctl status tomcat10 --no-pager
+systemctl status apache2 --no-pager
+
 sudo -u postgres psql -c "SELECT version();"
 sudo -u postgres psql -c "\du"
 sudo -u postgres psql -c "\l"
+
+curl -I http://localhost/
+curl -I http://localhost/app/
 ```

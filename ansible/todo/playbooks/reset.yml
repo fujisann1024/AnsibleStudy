@@ -1,0 +1,141 @@
+#  PostgreSQLのクラスタをリセット
+- name: Reset PostgreSQL cluster (DESTRUCTIVE)
+  hosts: db
+  become: true
+  vars:
+    pg_cluster: "main"
+    pg_data_dir: "/var/lib/postgresql/{{ pg_version }}/{{ pg_cluster }}"
+    pg_conf_dir: "/etc/postgresql/{{ pg_version }}/{{ pg_cluster }}"
+  tasks:
+    # クラスタが動作していれば停止
+    - name: Stop PostgreSQL service (ignore if not running)
+      ansible.builtin.service: # service モジュールを使用
+        name: postgresql # サービス名
+        state: stopped # 停止
+      failed_when: false # 停止に失敗しても無視
+
+    # 設定が壊れていると pg_dropcluster が失敗するため、失敗しても後続で強制削除する
+    - name: Try to drop cluster (may fail if config is broken)
+      ansible.builtin.command: "pg_dropcluster --stop {{ pg_version }} {{ pg_cluster }}" # コマンド実行
+      register: drop_result # 実行結果を登録
+      failed_when: false # 失敗しても無視
+      changed_when: drop_result.rc == 0 # 終了コードが0なら変更ありとみなす
+
+    # 強制的に設定・データディレクトリを削除
+    - name: Remove cluster config directory (force)
+      ansible.builtin.file: # file モジュールを使用
+        path: "{{ pg_conf_dir }}" # 設定ディレクトリパス
+        state: absent # 削除
+
+    # データディレクトリを削除
+    - name: Remove cluster data directory (force)
+      ansible.builtin.file: # file モジュールを使用
+        path: "{{ pg_data_dir }}" # データディレクトリパス
+        state: absent # 削除
+
+    # 新規にクラスタを作成して起動
+    - name: Create cluster and start
+      ansible.builtin.command: "pg_createcluster {{ pg_version }} {{ pg_cluster }} --start" # コマンド実行
+      register: create_result # 実行結果を登録
+      changed_when: true # 常に変更ありとみなす
+
+    # クラスタの状態を表示（デバッグ用）
+    - name: Show clusters
+      ansible.builtin.command: pg_lsclusters # コマンド実行
+      register: clusters # 実行結果を登録
+      changed_when: false # 変更なしとみなす
+
+    # デバッグ出力
+    - name: Debug clusters
+      ansible.builtin.debug: # debug モジュールを使用
+        var: clusters.stdout # 変数内容を表示
+
+# Tomcatのデプロイ済みアプリケーションを削除して初期状態に戻す
+- name: Reset Tomcat (DESTRUCTIVE)
+  hosts: app # 対象ホストは app グループ
+  become: true # sudo 権限で実行
+  vars:
+    tomcat_webapps_dir: "/var/lib/{{ tomcat_pkg }}/webapps"
+    tomcat_setenv_path: "/usr/share/{{ tomcat_pkg }}/bin/setenv.sh"
+    # Tomcatの標準アプリを残したい場合は keep リストに入れる
+    tomcat_webapps_keep:
+      - "ROOT"
+      - "docs"
+      - "examples"
+      - "host-manager"
+      - "manager"
+  tasks:
+    # Tomcatサービスを停止
+    - name: Stop Tomcat service (ignore if not running)
+      ansible.builtin.service: # service モジュールを使用
+        name: "{{ tomcat_service }}" # サービス名
+        state: stopped # 停止
+      failed_when: false # 停止に失敗しても無視
+
+    # setenv.sh を削除
+    - name: Remove setenv.sh (managed by Ansible)
+      ansible.builtin.file: # file モジュールを使用
+        path: "{{ tomcat_setenv_path }}" # setenv.sh のパス
+        state: absent # 削除
+
+    # デプロイ済みの webapps を検索
+    - name: Find deployed webapps (WAR/dir) except keep list
+      ansible.builtin.find: # find モジュールを使用
+        paths: "{{ tomcat_webapps_dir }}" # 検索パス
+        file_type: any # ファイル・ディレクトリ両方を対象
+        depth: 1 # 直下のみ検索
+      register: found_webapps # 検索結果を登録
+      failed_when: false # 失敗しても無視
+
+    # keep リストに含まれない webapps を削除
+    - name: Remove deployed webapps except keep list
+      ansible.builtin.file: # file モジュールを使用
+        path: "{{ item.path }}" # 削除対象のパス
+        state: absent # 削除
+      loop: "{{ found_webapps.files | default([]) }}" # 検索結果をループ
+      when: (item.path | basename) not in tomcat_webapps_keep # keep リストにない場合のみ実行
+
+    # Tomcatサービスを起動
+    - name: Start Tomcat service
+      ansible.builtin.service: # service モジュールを使用
+        name: "{{ tomcat_service }}" # サービス名
+        state: started # 起動
+        enabled: true # 自動起動有効化
+
+# Apacheのカスタムサイト設定とドキュメントルートを削除して初期状態に戻す
+- name: Reset Apache site (DESTRUCTIVE)
+  hosts: web # 対象ホストは web グループ
+  become: true # sudo 権限で実行
+  tasks:
+    # Apacheサービスを停止
+    - name: Stop Apache service (ignore if not running)
+      ansible.builtin.service: # service モジュールを使用
+        name: "{{ apache_service }}" # サービス名
+        state: stopped # 停止
+      failed_when: false # 停止に失敗しても無視
+
+    # カスタムサイトを無効化（有効化されていない場合は無視）
+    - name: Disable custom site (ignore if not enabled)
+      ansible.builtin.command: "a2dissite {{ apache_site_name }}.conf" # a2dissiteコマンドを使用
+      register: diss # コマンド実行結果を登録
+      failed_when: false # 失敗しても無視
+      changed_when: "'Disabling site' in (diss.stdout | default(''))" # 変更判定
+
+    # サイト設定ファイルを削除
+    - name: Remove site config
+      ansible.builtin.file: # file モジュールを使用
+        path: "/etc/apache2/sites-available/{{ apache_site_name }}.conf" # サイト設定ファイルパス
+        state: absent # 削除
+
+    # ドキュメントルートを削除
+    - name: Remove docroot (DESTRUCTIVE)
+      ansible.builtin.file: # file モジュールを使用
+        path: "{{ apache_docroot }}" # ドキュメントルートパス
+        state: absent # 削除
+
+    # Apacheサービスを起動
+    - name: Start Apache service
+      ansible.builtin.service: # service モジュールを使用
+        name: "{{ apache_service }}" # サービス名
+        state: started # 起動
+        enabled: true # 自動起動有効化

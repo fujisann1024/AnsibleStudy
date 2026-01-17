@@ -1,2 +1,4 @@
 pg_version: "16" # PostgreSQL バージョン
 pg_allow_remote: false # リモート接続許可フラグ
+
+java_package: "openjdk-21-jdk" # Java パッケージ名

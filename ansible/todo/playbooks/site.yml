@@ -1,0 +1,26 @@
+- name: Provision PostgreSQL
+  # 対象ホストは db グループ
+  hosts: db
+  # sudo 権限で実行
+  become: true
+  # roles_path配下のroles/postgresql/ を読み込む
+  roles:
+    - postgresql
+
+- name: Provision Tomcat
+  # 対象ホストは app グループ
+  hosts: app
+  # sudo 権限で実行
+  become: true
+  # roles_path配下のroles/tomcat/ を読み込む
+  roles:
+    - tomcat
+
+- name: Provision Apache
+  # 対象ホストは web グループ
+  hosts: web
+  # sudo 権限で実行
+  become: true
+  # roles_path配下のroles/apache/ を読み込む
+  roles:
+    - apache

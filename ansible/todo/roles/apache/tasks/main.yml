@@ -1,0 +1,60 @@
+# Apacheのインストールと設定
+- name: Install Apache
+  ansible.builtin.apt: # aptモジュールを使用
+    update_cache: true # パッケージリストを最新化
+    name:
+      - apache2 # Apacheパッケージ
+    state: present # インストール済みでなければインストール
+
+# Apacheのドキュメントルートを作成
+- name: Ensure docroot exists
+  ansible.builtin.file: # fileモジュールを使用
+    path: "{{ apache_docroot }}" # ドキュメントルートパス
+    state: directory # ディレクトリとして作成
+    owner: www-data # 所有者ユーザー
+    group: www-data # 所有者グループ
+    mode: "0755" # ディレクトリパーミッション
+
+# Apacheの必要なモジュールを有効化
+- name: Enable required apache modules (proxy, proxy_http, headers, rewrite)
+  ansible.builtin.command: "a2enmod {{ item }}" # a2enmodコマンドを使用
+  loop:
+    - proxy
+    - proxy_http
+    - headers
+    - rewrite
+  register: a2enmod_result # コマンド実行結果を登録
+  changed_when: "'Enabling module' in a2enmod_result.stdout" # 変更判定
+  failed_when: false # 失敗時も続行
+  notify: Reload Apache # 変更があった場合にハンドラを呼び出し
+
+# Apacheのバーチャルホスト設定をテンプレートから配置
+- name: Deploy vhost config
+  ansible.builtin.template: # templateモジュールを使用
+    src: vhost.conf.j2 # 元となるテンプレートファイル
+    dest: "/etc/apache2/sites-available/{{ apache_site_name }}.conf" # 配置先パス
+    mode: "0644" # ファイルパーミッション
+  notify: Reload Apache # 変更があった場合にハンドラを呼び出し
+
+#  Apacheのサイトを有効化
+- name: Enable site
+  ansible.builtin.command: "a2ensite {{ apache_site_name }}.conf" # a2ensiteコマンドを使用
+  register: a2ensite_result # コマンド実行結果を登録
+  changed_when: "'Enabling site' in a2ensite_result.stdout" # 変更判定
+  failed_when: false # 失敗時も続行
+  notify: Reload Apache # 変更があった場合にハンドラを呼び出し
+
+#  Apacheのデフォルトサイトを無効化（任意）
+- name: Disable default site (optional)
+  ansible.builtin.command: "a2dissite 000-default.conf" # a2dissiteコマンドを使用
+  register: a2dissite_result # コマンド実行結果を登録
+  changed_when: "'Disabling site' in a2dissite_result.stdout" # 変更判定
+  failed_when: false # 失敗時も続行
+  notify: Reload Apache # 変更があった場合にハンドラを呼び出し
+
+# Apacheサービスを有効化・起動
+- name: Ensure Apache is enabled and started
+  ansible.builtin.service: # serviceモジュールを使用
+    name: "{{ apache_service }}" # サービス名
+    state: started # 起動
+    enabled: true # 自動起動有効化

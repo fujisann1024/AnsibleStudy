@@ -1,0 +1,7 @@
+java_package: "openjdk-21-jdk"
+
+tomcat_pkg: "tomcat10"
+tomcat_service: "tomcat10"
+tomcat_http_port: 8080
+
+tomcat_java_opts: "-Xms256m -Xmx512m"

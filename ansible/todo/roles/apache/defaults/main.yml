@@ -1,0 +1,7 @@
+apache_service: "apache2"
+apache_site_name: "app"
+apache_listen_port: 80
+apache_docroot: "/var/www/app"
+
+tomcat_proxy_host: "127.0.0.1"
+tomcat_proxy_port: 8080

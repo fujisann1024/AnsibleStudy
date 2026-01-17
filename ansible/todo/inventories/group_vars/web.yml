@@ -1,0 +1,12 @@
+apache_service: "apache2"
+apache_site_name: "app"
+
+# Apacheが受ける公開ポート
+apache_listen_port: 80
+
+# Tomcat への転送先（同一ホスト想定）
+tomcat_proxy_host: "127.0.0.1"
+tomcat_proxy_port: 8080
+
+# 静的コンテンツ置き場（例）
+apache_docroot: "/var/www/app"

@@ -1,0 +1,25 @@
+<VirtualHost *:{{ apache_listen_port }}>
+    ServerName localhost
+
+    DocumentRoot {{ apache_docroot }}
+
+    <Directory {{ apache_docroot }}>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    # 静的は Apache: 例) /static/ 配下
+    Alias /static/ {{ apache_docroot }}/static/
+    <Directory {{ apache_docroot }}/static/>
+        Require all granted
+    </Directory>
+
+    # 動的は Tomcat に転送（例: /app 配下をTomcatへ）
+    ProxyPreserveHost On
+    ProxyPass        /app/  http://{{ tomcat_proxy_host }}:{{ tomcat_proxy_port }}/
+    ProxyPassReverse /app/  http://{{ tomcat_proxy_host }}:{{ tomcat_proxy_port }}/
+
+    ErrorLog  ${APACHE_LOG_DIR}/{{ apache_site_name }}_error.log
+    CustomLog ${APACHE_LOG_DIR}/{{ apache_site_name }}_access.log combined
+</VirtualHost>

@@ -39,6 +39,7 @@
     group: postgres # 所有者グループ
     mode: "0755" # ディレクトリパーミッション
 
+# postgresql.conf の conf.d ディレクトリ内に ansible 用設定を配置
 - name: Deploy ansible conf into conf.d
   ansible.builtin.template:
     src: 99-ansible.conf.j2

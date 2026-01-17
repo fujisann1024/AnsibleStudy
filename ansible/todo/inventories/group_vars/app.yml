@@ -1,0 +1,4 @@
+tomcat_pkg: "tomcat10" # Tomcat パッケージ名
+tomcat_service: "tomcat10" # Tomcat サービス名
+tomcat_http_port: 8080 # Tomcat HTTP ポート
+tomcat_java_opts: "-Xms256m -Xmx512m" # Tomcat Java オプション (メモリ設定)

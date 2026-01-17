@@ -1,0 +1,27 @@
+# Javaのインストール
+- name: Install Java
+  ansible.builtin.apt: # aptモジュールを使用
+    update_cache: true # パッケージリストを最新化
+    name: "{{ java_package }}" # インストールするJavaパッケージ名
+    state: present # インストール済みでなければインストール
+
+# Tomcatのインストール
+- name: Install Tomcat
+  ansible.builtin.apt: # aptモジュールを使用
+    name: "{{ tomcat_pkg }}" # インストールするTomcatパッケージ名
+    state: present # インストール済みでなければインストール
+
+# Tomcatの設定ファイルをテンプレートから配置
+- name: Deploy setenv.sh
+  ansible.builtin.template: # templateモジュールを使用
+    src: setenv.sh.j2 # 元となるテンプレートファイル
+    dest: "/usr/share/{{ tomcat_pkg }}/bin/setenv.sh" # 配置先パス
+    mode: "0755" # ファイルパーミッション
+  notify: Restart Tomcat # 変更があった場合にハンドラを呼び出し
+
+# Tomcatサービスを有効化・起動
+- name: Ensure Tomcat is enabled and started
+  ansible.builtin.service: # serviceモジュールを使用
+    name: "{{ tomcat_service }}" # サービス名
+    state: started # 起動
+    enabled: true # 自動起動有効化
