@@ -4,4 +4,9 @@ tomcat_pkg: "tomcat10"
 tomcat_service: "tomcat10"
 tomcat_http_port: 8080
 
+tomcat_deploy_enabled: true
+tomcat_war_src: "artifacts/app.war"
+tomcat_war_dest_name: "app.war"
+tomcat_clean_deploy: true
+
 tomcat_java_opts: "-Xms256m -Xmx512m"

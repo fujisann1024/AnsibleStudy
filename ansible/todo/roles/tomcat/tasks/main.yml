@@ -25,3 +25,29 @@
     name: "{{ tomcat_service }}" # サービス名
     state: started # 起動
     enabled: true # 自動起動有効化
+
+# deploy用の一時的な変数を設定
+- name: Set webapps dir
+  ansible.builtin.set_fact: # 一時的な変数を設定
+    _tomcat_webapps_dir: "/var/lib/{{ tomcat_pkg }}/webapps" # Tomcatのwebappsディレクトリパス
+  changed_when: false # 変更なしとみなす
+
+# app.warのクリーンデプロイ（展開済みディレクトリの削除）
+- name: Clean exploded app directory (optional)
+  ansible.builtin.file: # fileモジュールを使用
+    path: "{{ _tomcat_webapps_dir }}/{{ (tomcat_war_dest_name | regex_replace('\\.war$', '')) }}" # 展開済みアプリケーションディレクトリパス
+    state: absent # 削除
+  when:
+    - tomcat_deploy_enabled | bool # デプロイ有効時のみ実行
+    - tomcat_clean_deploy | bool # クリーンデプロイ有効時のみ実行
+
+# WARファイルのデプロイ
+- name: Deploy WAR to Tomcat webapps
+  ansible.builtin.copy: # copyモジュールを使用
+    src: "{{ tomcat_war_src }}" # 配置元ファイルパス
+    dest: "{{ _tomcat_webapps_dir }}/{{ tomcat_war_dest_name }}" # 配置先ファイルパス
+    mode: "0644" # ファイルパーミッション
+  when:
+    - tomcat_deploy_enabled | bool # デプロイ有効時のみ実行
+    - tomcat_war_src | length > 0 # 配置元が指定されている場合のみ実行
+  notify: Restart Tomcat # 変更があった場合にハンドラを呼び出し

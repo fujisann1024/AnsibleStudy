@@ -17,8 +17,8 @@
 
     # 動的は Tomcat に転送（例: /app 配下をTomcatへ）
     ProxyPreserveHost On
-    ProxyPass        /app/  http://{{ tomcat_proxy_host }}:{{ tomcat_proxy_port }}/
-    ProxyPassReverse /app/  http://{{ tomcat_proxy_host }}:{{ tomcat_proxy_port }}/
+    ProxyPass        /app/  http://{{ tomcat_proxy_host }}:{{ tomcat_proxy_port }}/app/
+    ProxyPassReverse /app/  http://{{ tomcat_proxy_host }}:{{ tomcat_proxy_port }}/app/
 
     ErrorLog  ${APACHE_LOG_DIR}/{{ apache_site_name }}_error.log
     CustomLog ${APACHE_LOG_DIR}/{{ apache_site_name }}_access.log combined

@@ -2,3 +2,8 @@ tomcat_pkg: "tomcat10" # Tomcat パッケージ名
 tomcat_service: "tomcat10" # Tomcat サービス名
 tomcat_http_port: 8080 # Tomcat HTTP ポート
 tomcat_java_opts: "-Xms256m -Xmx512m" # Tomcat Java オプション (メモリ設定)
+
+tomcat_deploy_enabled: true # WARデプロイ有効フラグ
+tomcat_war_src: "artifacts/app.war" # 配置元WARファイルパス（空欄の場合はデプロイしない）
+tomcat_war_dest_name: "app.war"
+tomcat_clean_deploy: true

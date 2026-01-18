@@ -1,26 +1,26 @@
 # 前提
 
-- インストール
+- インストール(初回)
 
-```
+```shell
 wsl --install -d Ubuntu-24.04 --name Ubuntu2404-Base
 ```
 
 - 起動
 
-```
+```shell
 wsl -d Ubuntu2404-Base
 ```
 
 - 停止
 
-```
+```shell
 exit
 ```
 
 - パッケージを最新の状態に更新
 
-```
+```shell
 sudo apt update
 sudo -y apt upgrade
 ```
@@ -29,7 +29,7 @@ sudo -y apt upgrade
 
 - [Ansible のインストール](https://docs.ansible.com/projects/ansible/latest/installation_guide/installation_distros.html?utm_source=chatgpt.com#installing-ansible-on-ubuntu)
 
-```
+```shell
 sudo apt install software-properties-common
 sudo add-apt-repository --yes --update ppa:ansible/ansible
 sudo apt install ansible
@@ -67,7 +67,7 @@ Ubuntu 標準の APT リポジトリより最新の Ansible をインストー�
 
 ファイルのコピー
 
-```
+```shell
 cd /home
 sudo cp -r /mnt/d/Project/Ansible/ansible /home
 cd ansible/todo/
@@ -75,16 +75,31 @@ cd ansible/todo/
 
 コレクション導入
 
-```
+```shell
 sudo ansible-galaxy collection install -r requirements.yml
 ansible-galaxy collection list | grep community.postgresql
 ```
 
 プレイブック実行
 
-```
+```shell
 ansible-playbook playbooks/reset.yml -K
 ansible-playbook playbooks/site.yml -K
+```
+
+応急処置
+
+```shell
+# パスワードの設定
+sudo -u postgres psql
+ALTER USER postgres WITH PASSWORD 'postgres';
+\q
+
+# warファイルの配置
+sudo cp artifacts/app.war /var/lib/tomcat10/webapps/app.war
+
+#tomcatの再起動
+sudo systemctl restart tomcat10
 ```
 
 -- DB 確認
